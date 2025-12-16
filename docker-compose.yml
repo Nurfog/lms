@@ -1,0 +1,58 @@
+services:
+  # --- Portal de Bienvenida ---
+  portal-service:
+    build:
+      context: .
+      dockerfile: ./services/portal-service/Dockerfile # Ruta correcta
+    ports:
+      - "8080:8080"
+    environment:
+      - RUST_LOG=info
+
+  identity-service:
+    build:
+      context: .
+      dockerfile: ./services/identity-service/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgres://user:password@lms-db:5432/lms_db
+      - RUST_LOG=info
+      - JWT_SECRET=un-secreto-muy-seguro-y-largo-para-produccion
+    depends_on:
+      lms-db:
+        condition: service_healthy
+
+  # --- Microservicio de Cursos ---
+  course-service:
+    build:
+      context: .
+      dockerfile: ./services/course-service/Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - DATABASE_URL=postgres://user:password@lms-db:5432/lms_db
+      - RUST_LOG=info
+    depends_on:
+      lms-db:
+        condition: service_healthy
+
+  # --- Base de Datos Centralizada ---
+  lms-db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=lms_db
+    ports:
+      - "5432:5432" # Exponer para debugging
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d lms_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - lms-db-data:/var/lib/postgresql/data
+
+volumes:
+  lms-db-data:

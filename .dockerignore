@@ -1,0 +1,5 @@
+# Ignorar artefactos de compilación de Rust
+target/
+
+# Ignorar datos de SQLx y variables de entorno locales
+.env

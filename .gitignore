@@ -1,0 +1,12 @@
+# Ignorar artefactos de compilación de Rust
+/target/
+
+# Ignorar archivos de entorno y secretos
+.env
+
+# Ignorar datos de SQLx generados localmente
+.sqlx/
+
+# Ignorar archivos de caché del editor
+.vscode/
+.idea/

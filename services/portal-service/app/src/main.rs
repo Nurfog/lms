@@ -1,0 +1,23 @@
+use axum::Router;
+use std::net::SocketAddr;
+use tower_http::services::ServeDir;
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+
+#[tokio::main]
+async fn main() {
+    tracing_subscriber::registry()
+        .with(tracing_subscriber::EnvFilter::new(
+            std::env::var("RUST_LOG").unwrap_or_else(|_| "info".into()),
+        ))
+        .with(tracing_subscriber::fmt::layer())
+        .init();
+
+    // Servir archivos estáticos desde la carpeta `static`
+    let app = Router::new().nest_service("/", ServeDir::new("static"));
+
+    let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
+    tracing::info!("Portal escuchando en {}", addr);
+
+    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
+    axum::serve(listener, app).await.unwrap();
+}

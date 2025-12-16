@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "services/identity-service/app",
+    "services/course-service/app",
+    "services/portal-service/app",
+]
+resolver = "2" # Usar el resolver más moderno para mejores dependencias
