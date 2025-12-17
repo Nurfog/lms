@@ -2,6 +2,7 @@ use axum::{
     routing::get, Router,
 };
 use dotenvy::dotenv;
+use sqlx::{postgres::PgPoolOptions, PgPool};
 use std::env;
 use std::net::SocketAddr;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -50,6 +51,7 @@ struct ApiDoc;
 
 #[tokio::main]
 async fn main() {
+    eprintln!("Starting course service");
     dotenv().ok();
     tracing_subscriber::registry()
         .with(tracing_subscriber::EnvFilter::new(
@@ -58,9 +60,21 @@ async fn main() {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL debe estar configurada");
+
+    let db_pool = PgPoolOptions::new()
+        .max_connections(5)
+        .connect(&database_url)
+        .await
+        .expect("No se pudo conectar a la base de datos");
+
+    // Ejecutar migraciones
+    sqlx::migrate!("./migrations").run(&db_pool).await.expect("Failed to run migrations");
+
     let app = Router::new()
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
-        .route("/health", get(health_check));
+        .route("/health", get(health_check))
+        .with_state(db_pool);
         // .route("/api/v1/courses", post(create_course))
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 3001));

@@ -1,38 +1,32 @@
 # --- Etapa 1: Builder ---
-FROM rust:1-alpine AS builder
+# Usamos una imagen base de Rust con Debian (Bullseye) para un entorno de compilación más estable.
+FROM rust:1-bullseye AS builder
 
-RUN apk add --no-cache musl-dev curl
-
+# Establecer el directorio de trabajo.
 WORKDIR /usr/src/app
 
-# --- Cacheo de Dependencias ---
-COPY ./Cargo.toml ./Cargo.lock ./
-COPY ./services/portal-service/app/Cargo.toml ./services/portal-service/app/Cargo.toml
-# Copiamos los otros Cargo.toml para que el workspace sea válido
-COPY ./services/identity-service/app/Cargo.toml ./services/identity-service/app/Cargo.toml
-COPY ./services/course-service/app/Cargo.toml ./services/course-service/app/Cargo.toml
+# Copiar todo el workspace.
+COPY . .
 
-# Creamos proyectos dummy para que `cargo` pueda descargar y compilar las dependencias.
-RUN mkdir -p ./services/portal-service/app/src && \
-    echo 'fn main() { println!("Dummy build for caching"); }' > ./services/portal-service/app/src/main.rs && \
-    mkdir -p ./services/identity-service/app/src && \
-    echo 'fn main() { println!("Dummy build for caching"); }' > ./services/identity-service/app/src/main.rs && \
-    mkdir -p ./services/course-service/app/src && \
-    echo 'fn main() { println!("Dummy build for caching"); }' > ./services/course-service/app/src/main.rs
-RUN cargo build --release --workspace
+# Compilar el portal-service en modo release.
+RUN cargo build --release --bin portal-service-app --target x86_64-unknown-linux-gnu
 
-# Ahora copiamos el código fuente real y los archivos estáticos.
-COPY ./services/portal-service/app/src ./services/portal-service/app/src
-COPY ./services/portal-service/app/static ./services/portal-service/app/static
+# --- Etapa 2: Runner ---
+FROM debian:bookworm-slim AS final
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY --from=builder /usr/src/app/target/x86_64-unknown-linux-gnu/release/portal-service-app .
 
-# Compilamos el servicio final
-RUN cargo build --release --workspace --bin portal-service-app && \
-    cp ./target/release/portal-service-app /usr/local/bin/
+# Establecemos un directorio de trabajo limpio.
+WORKDIR /app
 
-# --- Etapa 2: Final ---
-FROM alpine:latest
+# Copiar el binario compilado desde la etapa de builder.
+COPY --from=builder /usr/src/app/target/x86_64-unknown-linux-gnu/release/portal-service-app ./portal-service-app
 
-COPY --from=builder /usr/src/app/target/release/portal-service-app /usr/local/bin/
-COPY --from=builder /usr/src/app/services/portal-service/app/static /static
+# ¡Paso Clave! Copiar la carpeta de archivos estáticos.
+# La copiamos al directorio de trabajo actual.
+COPY --from=builder /usr/src/app/services/portal-service/app/static static
 
-CMD ["portal-service-app"]
+# Comando para ejecutar el servicio.
+# El ejecutable ahora está en el WORKDIR.
+CMD ["./portal-service-app"]

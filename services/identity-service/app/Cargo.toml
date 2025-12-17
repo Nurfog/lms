@@ -8,16 +8,17 @@ axum = "0.8.7"
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "postgres", "macros", "uuid", "chrono"] }
+sqlx = { version = "0.8.6", default-features = false, features = ["runtime-tokio", "tls-rustls", "postgres", "macros", "uuid", "chrono", "migrate"] }
 dotenvy = "0.15"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 uuid = { version = "1", features = ["v4", "serde"] }
 
 # Para contraseñas y tokens
-bcrypt = "0.17.1"
 chrono = { version = "0.4", features = ["serde"] }
 jsonwebtoken = { version = "10.2.0", features = ["rust_crypto"] }
+rust-argon2 = "3.0.0" # Alternativa 100% Rust para Argon2
+rand = "0.8.5" # Para generar el salt aleatorio
 
 # Para la documentación automática de la API (Swagger UI)
 utoipa = { version = "5.4.0", features = ["axum_extras", "uuid", "chrono"] }

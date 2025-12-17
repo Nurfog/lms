@@ -7,8 +7,19 @@ services:
     ports:
       - "8080:8080"
     environment:
+      # URLs de los otros microservicios para que el portal pueda interactuar con ellos
+      - IDENTITY_SERVICE_URL=http://identity-service:3000
+      - COURSE_SERVICE_URL=http://course-service:3001
       - RUST_LOG=info
-
+    depends_on:
+      lms-db:
+        condition: service_healthy
+      identity-service:
+        condition: service_healthy
+      course-service:
+        condition: service_healthy
+        
+# --- Microservicio de Identidad ---
   identity-service:
     build:
       context: .
@@ -22,6 +33,11 @@ services:
     depends_on:
       lms-db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   # --- Microservicio de Cursos ---
   course-service:
@@ -33,9 +49,15 @@ services:
     environment:
       - DATABASE_URL=postgres://user:password@lms-db:5432/lms_db
       - RUST_LOG=info
+      - JWT_SECRET=un-secreto-muy-seguro-y-largo-para-produccion
     depends_on:
       lms-db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   # --- Base de Datos Centralizada ---
   lms-db:

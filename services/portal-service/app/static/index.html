@@ -3,50 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LMS - Portal de Servicios</title>
+    <title>LMS Portal</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #f0f2f5;
+            line-height: 1.6;
+            background-color: #f4f4f9;
             color: #333;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
-        .container {
-            text-align: center;
-            padding: 50px;
-            background-color: white;
-            border-radius: 12px;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+        h1, h2 {
+            color: #444;
         }
-        h1 { color: #1a2b48; }
-        p { font-size: 1.1em; color: #555; }
-        .links { margin-top: 30px; }
-        .links a {
-            display: inline-block;
-            margin: 0 15px;
-            padding: 12px 25px;
-            color: #fff;
-            background-color: #007bff;
-            border-radius: 5px;
+        a {
+            color: #007bff;
             text-decoration: none;
-            font-weight: bold;
-            transition: background-color 0.3s;
         }
-        .links a:hover { background-color: #0056b3; }
+        a:hover {
+            text-decoration: underline;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            background: #fff;
+            margin-bottom: 10px;
+            padding: 15px;
+            border-radius: 5px;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🚀 LMS - Portal de Microservicios</h1>
-        <p>Bienvenido al Sistema de Gestión de Aprendizaje. Desde aquí puedes acceder a la documentación de las APIs.</p>
-        <div class="links">
-            <a href="http://localhost:3000/swagger-ui" target="_blank">API de Identidad</a>
-            <a href="http://localhost:3001/swagger-ui" target="_blank">API de Cursos</a>
-        </div>
-    </div>
+    <h1>Bienvenido al Portal del LMS</h1>
+    <p>Este es el punto de entrada principal a la plataforma de aprendizaje. Desde aquí puedes acceder a la documentación de las APIs de los diferentes microservicios.</p>
+
+    <h2>Recursos para Desarrolladores</h2>
+    <ul>
+        <li><a href="http://localhost:3000/swagger-ui" target="_blank">API de Identidad (Identity Service)</a></li>
+        <li><a href="http://localhost:3001/swagger-ui" target="_blank">API de Cursos (Course Service)</a></li>
+    </ul>
+
+    <h2>Próximos Pasos</h2>
+    <p>La próxima funcionalidad a implementar será el formulario de inicio de sesión y registro en esta misma página.</p>
 </body>
 </html>

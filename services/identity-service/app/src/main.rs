@@ -5,9 +5,10 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
-use bcrypt::{hash, verify, DEFAULT_COST};
+use argon2::{self, Config};
 use chrono::{Duration, Utc};
 use dotenvy::dotenv;
+use rand::Rng;
 use jsonwebtoken::{encode, EncodingKey, Header};
 use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgPoolOptions, PgPool};
@@ -125,6 +126,7 @@ struct ApiDoc;
 
 #[tokio::main]
 async fn main() {
+    eprintln!("Starting identity service");
     dotenv().ok();
     tracing_subscriber::registry()
         .with(tracing_subscriber::EnvFilter::new(
@@ -142,11 +144,8 @@ async fn main() {
         .await
         .expect("No se pudo conectar a la base de datos");
 
-    // Ejecutar las migraciones centralizadas
-    sqlx::migrate!("../../../migrations")
-        .run(&db_pool)
-        .await
-        .expect("No se pudieron ejecutar las migraciones de la base de datos");
+    // Ejecutar migraciones
+    sqlx::migrate!("./migrations").run(&db_pool).await.expect("Failed to run migrations");
 
     let app_state = AppState { db_pool, jwt_secret }; // (NUEVO)
 
@@ -189,12 +188,16 @@ async fn register(
     State(state): State<AppState>,
     Json(payload): Json<CreateUser>,
 ) -> Response {
-    let password_hash = match hash(payload.password, DEFAULT_COST) {
+    // Hashing de contraseña con rust-argon2
+    // Usamos una configuración segura por defecto y un salt aleatorio.
+    let salt = rand::thread_rng().r#gen::<[u8; 32]>();
+    let config = Config::default();
+    let password_hash = match argon2::hash_encoded(payload.password.as_bytes(), &salt, &config) {
         Ok(h) => h,
         Err(_) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     };
 
-    let new_user = sqlx::query_as!(
+    let new_user_result = sqlx::query_as!(
         User,
         "INSERT INTO users (first_name, last_name, username, email, password_hash) VALUES ($1, $2, $3, $4, $5) RETURNING id, first_name, last_name, username, email, password_hash, role as \"role: _\", created_at as \"created_at!\"",
         payload.first_name,
@@ -204,10 +207,10 @@ async fn register(
         password_hash
     )
     .fetch_one(&state.db_pool)
-    .await;
-
-    match new_user {
-        Ok(user) => {
+    .await
+    ;
+    match new_user_result {
+        Ok(user) => { // La variable `user` ahora es del tipo `User`
             let user_response = UserResponse {
                 id: user.id,
                 email: user.email,
@@ -239,7 +242,7 @@ async fn register(
 async fn login(
     State(state): State<AppState>,
     Json(payload): Json<LoginPayload>,
-) -> Response {
+    ) -> Response {
     // 1. Buscar al usuario por email
     let user = match sqlx::query_as!(
         User,
@@ -255,10 +258,7 @@ async fn login(
     };
 
     // 2. Verificar la contraseña
-    let password_valid = match verify(&payload.password, &user.password_hash) {
-        Ok(valid) => valid,
-        Err(_) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
-    };
+    let password_valid = argon2::verify_encoded(&user.password_hash, payload.password.as_bytes()).unwrap_or(false);
 
     if !password_valid {
         return StatusCode::UNAUTHORIZED.into_response(); // Contraseña incorrecta

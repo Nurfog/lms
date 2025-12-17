@@ -1,77 +1,52 @@
-# LMS - Sistema de Gestión de Aprendizaje (Monorepo)
+# Learning Management System (LMS) con Microservicios en Rust
 
-Este proyecto es un Sistema de Gestión de Aprendizaje (LMS) construido con una arquitectura de microservicios utilizando Rust, Axum, SQLx, y Docker.
+Este proyecto es un Sistema de Gestión de Aprendizaje (LMS) construido utilizando una arquitectura de microservicios con Rust, Axum, SQLx y Docker.
+
+## Arquitectura
+
+El sistema está compuesto por los siguientes microservicios:
+
+- **`identity-service`**: Gestiona todo lo relacionado con la identidad y autenticación de usuarios.
+  - Registro de nuevos usuarios.
+  - Login y generación de tokens JWT.
+  - Puerto: `3000`
+
+- **`course-service`**: Se encargará de la lógica de negocio para cursos, módulos y lecciones.
+  - Actualmente, es un esqueleto con la funcionalidad básica para ser expandido.
+  - Puerto: `3001`
+
+- **`portal-service`**: Es el punto de entrada web (frontend) para los usuarios. Sirve una aplicación web que consume las APIs de los otros microservicios.
+  - Puerto: `8080`
+
+- **`lms-db`**: Una base de datos PostgreSQL centralizada que es compartida por todos los servicios.
+  - Puerto: `5432`
 
 ## Tech Stack
 
--   **Backend**: Rust
--   **Framework Web**: Axum
--   **ORM / Acceso a BD**: SQLx
--   **Base de Datos**: PostgreSQL
--   **Contenerización**: Docker & Docker Compose
+- **Backend**: Rust
+  - **Framework Web**: Axum
+  - **Asincronía**: Tokio
+  - **Base de Datos**: SQLx con PostgreSQL
+- **Base de Datos**: PostgreSQL
+- **Contenerización**: Docker & Docker Compose
 
-## Estructura del Proyecto
+## Cómo Empezar
 
-El proyecto está organizado como un monorepo de Cargo workspace:
+### Prerrequisitos
 
-```
-lms/
-├── .env                # Variables de entorno locales (ignoradas por git)
-├── Cargo.lock
-├── Cargo.toml          # Workspace principal
-├── docker-compose.yml
-├── migrations/         # Migraciones de SQLx para la base de datos
-├── services/
-│   ├── identity-service/
-│   │   ├── app/        # Crate del servicio de identidad
-│   │   └── Dockerfile
-│   ├── course-service/
-│   │   ├── app/
-│   │   └── Dockerfile
-│   └── portal-service/
-│       ├── app/        # Crate del portal de bienvenida
-│       └── Dockerfile
-└── README.md
-```
+- Docker
+- Docker Compose
 
-## Prerrequisitos
+### Ejecución
 
--   Rust y Cargo
--   Docker y Docker Compose
--   `sqlx-cli` (instalar con `cargo install sqlx-cli`)
+1. Clona el repositorio.
+2. Desde la raíz del proyecto, ejecuta el siguiente comando para construir y levantar todos los servicios:
+   ```bash
+   docker compose up --build
+   ```
 
-## Flujo de Trabajo para Desarrollo
+### Endpoints Disponibles
 
-El siguiente flujo es necesario tanto para el desarrollo local como para construir las imágenes de Docker.
-
-1.  **Crear archivo de entorno**:
-    Asegúrate de tener un archivo `.env` en la raíz del proyecto con las variables `DATABASE_URL` y `JWT_SECRET`.
-
-2.  **Iniciar la Base de Datos**:
-    ```bash
-    docker-compose up -d lms-db
-    ```
-
-3.  **Ejecutar Migraciones**:
-    Aplica el esquema de la base de datos.
-    ```bash
-    sqlx migrate run
-    ```
-
-4.  **Preparar Datos de SQLx (¡Paso Clave!)**:
-    Este comando analiza tu código y genera los metadatos necesarios para la compilación offline dentro de Docker. **Debe ejecutarse cada vez que añadas o cambies una consulta SQL**.
-    ```bash
-    cargo sqlx prepare --workspace
-    ```
-
-5.  **Construir y Ejecutar con Docker**:
-    ```bash
-    docker-compose up --build
-    ```
-
-## Endpoints de la API
-
--   **Identity Service**: `http://localhost:3000`
-    -   Documentación Swagger: `http://localhost:3000/swagger-ui`
--   **Course Service**: `http://localhost:3001`
-    -   Documentación Swagger: (próximamente)
+- **Portal Web**: http://localhost:8080
+- **API Docs (Identity Service)**: http://localhost:3000/swagger-ui
+- **API Docs (Course Service)**: http://localhost:3001/swagger-ui
