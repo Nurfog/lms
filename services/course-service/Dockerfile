@@ -11,8 +11,11 @@ COPY . .
 # Copiar migrations al directorio del crate
 RUN cp -r migrations services/course-service/app/migrations
 
+# Establecer SQLX_OFFLINE para usar queries cacheadas
+ENV SQLX_OFFLINE=true
+
 # Compilar el course-service en modo release.
-RUN SQLX_OFFLINE=true cargo build --release --bin course-service-app --target x86_64-unknown-linux-gnu
+RUN cargo build --release --bin course-service-app --target x86_64-unknown-linux-gnu
 
 # --- Etapa 2: Runner ---
 FROM debian:bookworm-slim AS final

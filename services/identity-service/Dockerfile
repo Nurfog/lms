@@ -11,8 +11,11 @@ COPY . .
 # Copiar migrations al directorio del crate
 RUN cp -r migrations services/identity-service/app/migrations
 
+# Establecer SQLX_OFFLINE para usar queries cacheadas
+ENV SQLX_OFFLINE=true
+
 # Compilar el identity-service en modo release.
-RUN SQLX_OFFLINE=true cargo build --release --bin identity-service-app --target x86_64-unknown-linux-gnu
+RUN cargo build --release --bin identity-service-app --target x86_64-unknown-linux-gnu
 
 # --- Etapa 2: Runner ---
 FROM debian:bookworm-slim AS final
